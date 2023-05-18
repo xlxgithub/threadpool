@@ -1,81 +1,46 @@
 #include"threadpool.h"
 #include<chrono>
 #include<thread>
-class mytask:public Task{
-public:
-    mytask(int a,int b):begin(a),end(b){};
-    Any run(){
-        std::cout<<"tid: "<<std::this_thread::get_id()<<" begin"<<std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(10));
-        std::cout<<"tid: "<<std::this_thread::get_id()<<" end"<<std::endl;
-        int sum = 0;
-        // for (int i = begin; i < end; i++)
-        // {
-        //     /* code */
-        //     sum += i;
-        // }
-        // std::this_thread::sleep_for(std::chrono::seconds(5));
-        return sum;
 
-    }
-    int begin;
-    int end;
-};
+int sum1(int a){
+    //std::cout<<a<<std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    return a;
+}
+int sum2(int a,int b){
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    return a+b;
+}
+int sum3(int a,int b,int c){
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    return a+b+c;
+}
+
 int main(){
 
-    /*
-        
-    */
-       {
-        Threadpool pool;
-        pool.start(4,8,1024,3);
-        Reslut res0 = pool.submitTask(std::make_shared<mytask>(1,10));
-        // int sum0 = res0.get().cast_<int>();
-        // std::cout<<"Sum0: "<<sum0<<std::endl; 
-        }
- 
+    Threadpool pool;
+    pool.start(2,4,1024,3);
+    
+    int (*pr)(int) = sum1;
 
-    // Reslut res1 = pool.submitTask(std::make_shared<mytask>(2,10));
+    std::future<int> r1 = pool.submitTask(*pr,1);
+    //std::cout<<"r1:"<<r1.get()<<std::endl;
 
+    std::future<int> r2 = pool.submitTask(sum2,1,2);
+    //std::cout<<"r2:"<<r2.get()<<std::endl;
 
-    // Reslut res2 = pool.submitTask(std::make_shared<mytask>(3,10));
+    std::future<int> r3 = pool.submitTask(sum3,1,2,3);
+    //std::cout<<"r3:"<<r3.get()<<std::endl;
 
+    std::future<int> r4= pool.submitTask(sum3,1,2,3);
+    //std::cout<<"r4:"<<r4.get()<<std::endl;
 
-    // Reslut res3 = pool.submitTask(std::make_shared<mytask>(5,10));
+    std::future<int> r5 = pool.submitTask(sum3,1,2,3);
+    //std::cout<<"r5:"<<r5.get()<<std::endl;
 
+    std::future<int> r6 = pool.submitTask(sum3,1,2,3);
+    //std::cout<<"r6:"<<r6.get()<<std::endl;
 
-    // Reslut res4 = pool.submitTask(std::make_shared<mytask>(7,10));
-
-
-    // Reslut res5 = pool.submitTask(std::make_shared<mytask>(1,10));
-
-
-    // Reslut res6 = pool.submitTask(std::make_shared<mytask>(1,10));
- 
-
-    // Reslut res7 = pool.submitTask(std::make_shared<mytask>(1,10));
-
-
-    // Reslut res8= pool.submitTask(std::make_shared<mytask>(1,10));
-
-
-
-
-
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    // pool.submitTask(std::make_shared<mytask>());
-    Any a(0);
-    //std::cout<<a.cast_()<<std::endl;
-    std::cout<<"Sum0"<<std::endl; 
     getchar();
+    return 0;
 }

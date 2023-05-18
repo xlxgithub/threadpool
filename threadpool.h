@@ -9,99 +9,7 @@
 #include<iostream>
 #include<atomic>
 #include<unordered_map>
-
-//Any类 存储任意类型元素 C++17中有
-class Any{
-public:
-    Any()=default;
-    ~Any()=default;
-    Any(Any&&)=default;
-    Any& operator=(Any&&) = default;
-    //构造函数 让any接受任意类型数据
-    template<class T>
-    Any(T data):m_base(std::make_unique<Derive<T>>(data)){};
-    // Any(T data){
-    //     m_base(new Derive<T>(data));
-    // }
-    //存储出来的数据提取出来
-    template<class T>
-    T cast_(){
-        //基类指针 到派生类指针
-        Derive<T>* dptr = dynamic_cast<Derive<T>*>(m_base.get());
-        if(dptr==nullptr){
-            throw "类型错误";
-        }
-        return dptr->m_data;
-    }
-private:
-    //基类类型
-    class Basic{
-    public:
-        virtual ~Basic()=default;
-    };
-    //派生类类型
-    template<class T>
-    class Derive :public Basic{
-    public:
-        Derive(T data):m_data(data){};
-        T m_data; //保存任意的其他类型
-    };
-private:
-    std::unique_ptr<Basic> m_base; //定义一个基类指针
-};
-//信号量类 linux sem_init c++20 semaphore
-class Semaphore{
-public:
-    Semaphore():m_count(0){};
-    Semaphore(int count):m_count(count){};
-    ~Semaphore()=default;
-
-    //获取一个信号量
-    void wait(){
-        std::unique_lock<std::mutex> locker(m_mutex);
-        m_cond.wait(locker,[&]()->bool{return m_count>0;});
-        m_count--;
-    }
-    //释放一个信号量
-    void post(){
-        std::unique_lock<std::mutex> locker(m_mutex);
-        m_count++;
-        m_cond.notify_all();
-    }
-
-private:
-    int m_count;
-    std::mutex m_mutex;
-    std::condition_variable m_cond;
-};
-//实现接受任务返回值
-class Task;
-class Reslut{
-public:
-    Reslut()=default;
-    Reslut(std::shared_ptr<Task> task,bool isvalid=true);
-    Any get();
-    void setVal(Any any);
-    ~Reslut()=default;
-private:
-    Any m_any;
-    Semaphore m_sem;
-    std::shared_ptr<Task> m_task;
-    std::atomic_bool m_isvalid;
-};
-
-//任务类
-class Task{
-public:
-    Task();
-    ~Task();
-    void exec();
-    void setReslut(Reslut* res);
-    //用户可以自定义任务类型 从Task继承 重写run函数 
-    virtual Any run()=0;
-private:
-    Reslut* m_reslut;
-};
+#include<future>
 //线程类
 class Thread{
 public:
@@ -124,7 +32,38 @@ class Threadpool{
 public:
     Threadpool();
     ~Threadpool();
-    Reslut submitTask(std::shared_ptr<Task> sp);//给线程池提交任务
+
+    template<typename Func,typename... Args>
+    auto submitTask(Func&& func, Args&&... args) -> std::future<decltype(func(args...))> {
+        // 获取返回值类型
+        using RType = decltype(func(args...));
+
+        //打包任务放入任务队列
+        auto task = std::make_shared<std::packaged_task<RType()>>(std::bind(std::forward<Func>(func),std::forward<Args>(args)...));
+        std::future<RType> reslut = task->get_future();
+
+        //获取锁
+        std::unique_lock<std::mutex> locker(m_mutex);
+        if(!notFulll.wait_for(locker,std::chrono::seconds(1),
+        [&]()->bool{return m_task.size()<m_max_task_size;}))
+        {
+            //表示等待1s 条件仍然没有满足
+            std::cout<<"提交任务失败"<<std::endl;
+            auto task  = std::make_shared<std::packaged_task<RType()>>([]()->RType{ return RType();});
+            (*task)();
+            return task->get_future();
+        }
+
+        //如果有空余把任务放到任务队列上
+        m_task.emplace([task](){(*task)();});
+        m_task_size++;
+        //notempty 信号通知ß
+        notEmpty.notify_all();
+        std::cout<<"提交任务成功"<<std::endl;
+
+        return reslut;
+}
+
     void start(unsigned int initsize=4,unsigned int maxsize=8,unsigned int maxtasksize=1024,int maxidletime=10);//开始线程池
     Threadpool(const Threadpool&)=delete;
     Threadpool operator=(const Threadpool&)=delete;
@@ -143,9 +82,12 @@ private:
 
 
     //任务队列
-    std::queue<std::shared_ptr<Task>> m_task; //任务列表
+    using Task = std::function<void()>;
+    std::queue<Task> m_task; //任务列表
+
     unsigned int m_task_size;
     unsigned int m_max_task_size;//最大任务数量
+    
     std::mutex m_mutex;
     std::condition_variable notFulll;//任务队列不满的信号量
     std::condition_variable notEmpty;//任务队列不空的信号量
