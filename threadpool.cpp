@@ -90,9 +90,6 @@ void Threadpool::threadFunc(int tid)
                             m_cur_thread_siz--;
                             m_idel_thread_size--;
                             std::cout<<tid<<"线程退出"<<std::endl;
-                            // std::cout<<"当前线程数量size:  "<<m_thread.size()<<std::endl;
-                            // std::cout<<"当前线程数量: "<<m_cur_thread_siz<<std::endl;
-                            // std::cout<<"当前空闲线程数量: "<<m_idel_thread_size<<std::endl;
                         }
                     }
                 }

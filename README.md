@@ -42,5 +42,5 @@
     1.c++11的新特性 std::function std::bind std::packaged_task std::future 
     2.c++11多线程编程相关 互斥量 条件变量 原子变量
     3.c++11可变参数模板与返回类型后置语法
-    4.git简单用法
+    4.git用法
 [def]: 可变参数模版线程池.png

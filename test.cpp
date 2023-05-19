@@ -41,7 +41,6 @@ int main(){
     std::future<int> r6 = pool.submitTask(sum3,1,2,3);
     //std::cout<<"r6:"<<r6.get()<<std::endl;
     }
-
     getchar();
     return 0;
 }
