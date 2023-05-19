@@ -18,7 +18,7 @@ int sum3(int a,int b,int c){
 
 int main(){
 
-    Threadpool pool;
+    {Threadpool pool;
     pool.start(2,4,1024,3);
     
     int (*pr)(int) = sum1;
@@ -40,6 +40,7 @@ int main(){
 
     std::future<int> r6 = pool.submitTask(sum3,1,2,3);
     //std::cout<<"r6:"<<r6.get()<<std::endl;
+    }
 
     getchar();
     return 0;

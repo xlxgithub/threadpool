@@ -48,7 +48,10 @@ void Threadpool::threadFunc(int tid)
     {
         
         if(!isPollruning && m_task.size()==0){
-            m_cur_thread_siz=0;
+            std::unique_lock<std::mutex>locker(m_mutex);
+            m_thread.erase(tid);
+            std::cout<<tid<<"线程退出"<<std::endl;
+            m_cur_thread_siz--;
             exitcond.notify_all();
             return;
         }
@@ -73,7 +76,6 @@ void Threadpool::threadFunc(int tid)
                     m_idel_thread_size++;
                     m_cur_thread_siz++;
                 }
-                std::cout<<"ifwaimian: "<<std::endl;
             }
             //cached模式下创建新线程结束后 超时10s回收线程
             if(m_cur_thread_siz>m_init_thread_size){
@@ -87,7 +89,7 @@ void Threadpool::threadFunc(int tid)
                             m_thread.erase(tid);
                             m_cur_thread_siz--;
                             m_idel_thread_size--;
-                            //std::cout<<std::this_thread::get_id()<<"：线程退出"<<std::endl;
+                            std::cout<<tid<<"线程退出"<<std::endl;
                             // std::cout<<"当前线程数量size:  "<<m_thread.size()<<std::endl;
                             // std::cout<<"当前线程数量: "<<m_cur_thread_siz<<std::endl;
                             // std::cout<<"当前空闲线程数量: "<<m_idel_thread_size<<std::endl;
@@ -127,11 +129,6 @@ void Threadpool::threadFunc(int tid)
 
             lasttime = std::chrono::high_resolution_clock().now();
         
-    }
-    if(!isPollruning){
-        m_cur_thread_siz=0;
-        exitcond.notify_all();
-        return;
     }
 }
 
